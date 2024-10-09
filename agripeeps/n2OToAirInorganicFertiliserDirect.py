@@ -1,5 +1,6 @@
 # Adapted from HESTIA https://gitlab.com/hestia-earth/hestia-engine-models/-/blob/develop/hestia_earth/models/ipcc2019/n2OToAirInorganicFertiliserDirect.py?ref_type=heads
 from enum import Enum
+
 class TermTermType(Enum):
     INORGANICFERTILISER = 1
     ORGANICFERTILISER = 2
@@ -42,31 +43,7 @@ N2O_FACTORS = {
         'max': 0.029
     }
 }
-EF4_FACTORS = {
-    'dry': {
-        'value': 0.005,
-        'min': 0,
-        'max': 0.011
 
-    },
-    'wet': {
-        'value': 0.014,
-        'min': 0.011,
-        'max': 0.017
-    },
-    'default': {
-        'value': 0.01,
-        'min': 0.002,
-        'max': 0.018
-    }
-}
-EF5_FACTORS = {
-    'default': {
-        'value': 0.011,
-        'min': 0.0,
-        'max': 0.02
-    }
-}
 
 def _is_wet(ecoClimateZone: str = None):
     return get_ecoClimateZone_lookup_value(ecoClimateZone, 'wet') == 1 if ecoClimateZone else None
