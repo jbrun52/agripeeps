@@ -45,8 +45,8 @@ N2O_FACTORS = {
 }
 
 
-def _is_wet(ecoClimateZone: str = None):
-    return get_ecoClimateZone_lookup_value(ecoClimateZone, 'wet') == 1 if ecoClimateZone else None
+#def _is_wet(ecoClimateZone: str = None):
+#    return get_ecoClimateZone_lookup_value(ecoClimateZone, 'wet') == 1 if ecoClimateZone else None
 
 
 def ecoClimate_factors(factors: dict, input_term_type: TermTermType = None, wet_climate: str = None):
