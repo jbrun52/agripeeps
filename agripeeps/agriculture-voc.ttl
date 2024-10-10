@@ -1,0 +1,25 @@
+@prefix qudt: <http://qudt.org/schema/qudt/> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix sou: <http://qudt.org/vocab/sou/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+
+
+<https://vocab.sentier.dev/model-terms/emission_factor> a skos:Concept ;
+    skos:inScheme <https://vocab.sentier.dev/model-terms/generic> ;
+    skos:related <https://en.wikipedia.org/wiki/Emission_intensity> ;
+    skos:prefLabel "Emission factor"@en ;
+    skos:altLabel "EF"@en ;
+    skos:definition "A factor expression how much of a certain emission is caused by an amount of input/output/activity"@en .
+
+<https://vocab.sentier.dev/model-terms/nitrogen_n2o_emission_factor> a skos:Concept ;
+    skos:inScheme <https://vocab.sentier.dev/model-terms/generic> ;
+    skos:broader <https://vocab.sentier.dev/model-terms/emission_factor> ;
+    skos:prefLabel "Emission factor of N2O-N caused by N fertiliser"@en ;
+    skos:altLabel "EF N2O"@en ;
+    qudt:hasQuantityKind <https://vocab.sentier.dev/units/unit/KiloGM-PER-KiloGM> ;
+    skos:definition "A factor expressing how much N2O-N is emitted for a certain amount of fertilizer N input [kg N2O–N (kg N)-1]"@en .
+
