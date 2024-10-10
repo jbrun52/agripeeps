@@ -7,8 +7,18 @@ from datetime import date
 import logging
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
-from sentier_data_tools.iri import ProductIRI, GeonamesIRI
-from sentier_data_tools.model import SentierModel
+from sentier_data_tools import (
+    DatasetKind,
+    Demand,
+    Flow,
+    FlowIRI,
+    GeonamesIRI,
+    ModelTermIRI,
+    ProductIRI,
+    SentierModel,
+)
+from sentier_data_tools.iri import ProductIRI#, GeonamesIRI
+#from sentier_data_tools.model import SentierModel
 import DirectFertiliserEmission as dfe
 
 ## Attention : I would like demand to come from user input, I need mapping from natural language to IRI for product and geonames
@@ -33,7 +43,9 @@ class RunConfig(BaseModel):
 
 class Crop(SentierModel):
     def __init__(self, user_input: UserInput, run_config: RunConfig):
-        self.aliases = {}
+        self.aliases = {ProductIRI(
+            "http://data.europa.eu/xsp/cn2024/100500000080"
+            ): "corn"}
         # Assuming user_input maps to demand in SentierModel
         super().__init__(demand=user_input, run_config=run_config)
 
