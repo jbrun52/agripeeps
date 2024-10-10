@@ -23,3 +23,16 @@
     qudt:hasQuantityKind <https://vocab.sentier.dev/units/unit/KiloGM-PER-KiloGM> ;
     skos:definition "A factor expressing how much N2O-N is emitted for a certain amount of fertilizer N input [kg N2O–N (kg N)-1]"@en .
 
+<https://vocab.sentier.dev/model-terms/yield> a skos:Concept ;
+    skos:inScheme <https://vocab.sentier.dev/model-terms/generic> ;
+    skos:related <https://en.wikipedia.org/wiki/Yield> ;
+    skos:prefLabel "Yield"@en ;
+    skos:altLabel "yield"@en ;
+    skos:definition "A factor expressing how much of a product is produced for a certain amount of input or space or time"@en .
+
+<https://vocab.sentier.dev/model-terms/crop_yield> a skos:Concept ;
+    skos:inScheme <https://vocab.sentier.dev/model-terms/generic> ;
+    skos:broader <https://vocab.sentier.dev/model-terms/yield> ;
+    skos:prefLabel "Cropy yield"@en ;
+    qudt:hasQuantityKind <https://vocab.sentier.dev/units/unit/KiloGM-PER-M2> ;
+    skos:definition "A factor expressing how much crop mass is produced in one year on an area of 1 square metre"@en .
