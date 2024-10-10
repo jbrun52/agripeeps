@@ -23,9 +23,9 @@ def create_mineral_fertilizer_data():
     df_fertiliser["Year"] = df_fertiliser["Year"].str[0:4]
     df_fertiliser["Country"] = df_fertiliser.ISO3_code.apply(lambda code: "https://sws.geonames.org/" + str(lookup_geonameid[code]))
     df_fertiliser['CropIRI'] = df_fertiliser.Crop.apply(lambda name: crop_IRIs[name])
-    df_fertiliser['N_kg_m2'] = df_fertiliser['N_t_ha'] * 1000 / 10000
-    df_fertiliser[["Year", "Country", "CropIRI", "N_kg_m2"]].set_axis(fertiliser_COLUMNS, axis=1)
+    df_fertiliser['N_kg_m2'] = df_fertiliser['N_t_ha'] * 1000 / 10000    
     years = df_fertiliser["Year"].str[0:4].unique()
+    df_fertiliser = df_fertiliser[["Year", "Country", "CropIRI", "N_kg_m2"]].set_axis(fertiliser_COLUMNS, axis=1)
     return df_fertiliser
 
 def create_crop_yields_data():

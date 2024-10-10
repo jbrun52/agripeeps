@@ -45,14 +45,43 @@ class Crop(SentierModel):
     def __init__(self, user_input: UserInput, run_config: RunConfig):
         self.aliases = {ProductIRI(
             "http://data.europa.eu/xsp/cn2024/100500000080"
-            ): "corn"}
+            ): "corn",
+            ProductIRI(
+            "http://data.europa.eu/xsp/cn2024/060011000090"
+            ): "crop",
+            ProductIRI(
+            "http://data.europa.eu/xsp/cn2024/310200000080"
+            ): "mineral_fertiliser",
+            ProductIRI(
+            "https://vocab.sentier.dev/model-terms/crop_yield"
+            ): "crop_yield"}
         # Assuming user_input maps to demand in SentierModel
         super().__init__(demand=user_input, run_config=run_config)
 
     def get_master_db(self) -> None :
+        logging.info(self.crop)
+        agridata_bom = self.get_model_data(
+            product=self.crop, kind=DatasetKind.BOM
+        )
+        logging.info(agridata_bom)
+        for i in agridata_bom["exactMatch"]:
+            print(self.mineral_fertiliser)
+            if self.mineral_fertiliser in [ProductIRI(col["iri"]) for col in i.columns]:
+                self.mineral_fertiliser_data = i.dataframe
+                logging.info(f"Set input data: {self.mineral_fertiliser.display()}")
+
+        agridata_param = self.get_model_data(
+            product=self.crop, kind=DatasetKind.PARAMETERS
+        )
+        for i in agridata_param["exactMatch"]:
+            if self.crop_yield in [ProductIRI(col["iri"]) for col in i.columns]:
+                self.crop_yield_data = i.dataframe
+                logging.info(f"Set input data: {self.crop_yield}")
+                
         #self.masterDB = pd.read_csv('../docs/MasterDB.csv')
         logging.info("Getting master db")
-        pass
+        
+        return agridata_bom
         
     def get_all_input(self) -> float :
         
