@@ -4,6 +4,7 @@ from typing import Optional
 from pydantic import BaseModel
 import pandas as pd
 from datetime import date
+import create_data
 import logging
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
@@ -17,8 +18,6 @@ from sentier_data_tools import (
     ProductIRI,
     SentierModel,
 )
-from sentier_data_tools.iri import ProductIRI#, GeonamesIRI
-#from sentier_data_tools.model import SentierModel
 import DirectFertiliserEmission as dfe
 
 ## Attention : I would like demand to come from user input, I need mapping from natural language to IRI for product and geonames
@@ -26,11 +25,10 @@ import DirectFertiliserEmission as dfe
 class UserInput(BaseModel):
     product_iri: ProductIRI
     unit : ProductIRI
-    #properties: Optional[list]
     amount: float
-    climate_type : Optional[str] = None
     crop_yield : Optional[float] = None
     fertilizer_amount : Optional[float] = None
+    climate_type : Optional[str] = None
     spatial_context: GeonamesIRI = GeonamesIRI("https://sws.geonames.org/6295630/")
     begin_date: Optional[date] = None
     end_date: Optional[date] = None
@@ -58,53 +56,57 @@ class Crop(SentierModel):
         # Assuming user_input maps to demand in SentierModel
         super().__init__(demand=user_input, run_config=run_config)
 
-    def get_master_db(self) -> None :
-        logging.info(self.crop)
-        agridata_bom = self.get_model_data(
-            product=self.crop, kind=DatasetKind.BOM
-        )
-        logging.info(agridata_bom)
-        for i in agridata_bom["exactMatch"]:
-            print(self.mineral_fertiliser)
-            if self.mineral_fertiliser in [ProductIRI(col["iri"]) for col in i.columns]:
-                self.mineral_fertiliser_data = i.dataframe
-                logging.info(f"Set input data: {self.mineral_fertiliser.display()}")
-
-        agridata_param = self.get_model_data(
-            product=self.crop, kind=DatasetKind.PARAMETERS
-        )
-        for i in agridata_param["exactMatch"]:
-            if self.crop_yield in [ProductIRI(col["iri"]) for col in i.columns]:
-                self.crop_yield_data = i.dataframe
-                logging.info(f"Set input data: {self.crop_yield}")
-                
-        #self.masterDB = pd.read_csv('../docs/MasterDB.csv')
-        logging.info("Getting master db")
+    def run_create_data(self) :
+        logging.info(f"create data")
+        create_data.create_example_local_datastorage()
         
-        return agridata_bom
-        
-    def get_all_input(self) -> float :
-        
+    def get_all_input(self) -> None :
+        #Define climate
+        logging.info("Getting climate")
         if self.demand.climate_type is None:
             self.climate_key = 'default'
         else:
-            # Ensure wet_climate is either 'wet' or 'dry'
             if self.demand.climate_type not in ['wet', 'dry']:
                 logging.error(f"Invalid climate type value: {self.demand.climate_type}. Expected 'wet', 'dry', or None.")
             self.climate_key = self.demand.climate_type
             
-        if self.demand.crop_yield is None :
-            self.demand.crop_yield = 7.0 #to be modified as a function of self.masterDB
-        if self.demand.fertilizer_amount is None :
-            self.demand.fertilizer_amount = 70 #To be modified as a function of self.masterDB
         logging.info("Getting crop yield and fertilizer amount")
+
+        if self.demand.fertilizer_amount is None :
+            agridata_bom = self.get_model_data(
+                product=self.crop, kind=DatasetKind.BOM
+            )
+    
+            for i in agridata_bom["exactMatch"]:
+                if self.mineral_fertiliser in [ProductIRI(col["iri"]) for col in i.columns]:
+                    Crop.mineral_fertiliser_data = i.dataframe
+                    self.fertilizer_amount = 70 #to be modified
+                    #logging.info(f"Set input data: {self.mineral_fertiliser.display()}")
+        else : 
+            self.fertilizer_amount = self.demand.fertilizer_amount
+
+        if self.demand.crop_yield is None :
+            agridata_param = self.get_model_data(
+                product=self.crop, kind=DatasetKind.PARAMETERS
+            )
+            for i in agridata_param["exactMatch"]:
+                if self.crop_yield in [ProductIRI(col["iri"]) for col in i.columns]:
+                    Crop.crop_yield_data = i.dataframe
+                    self.crop_yield = 7 #to be modified
+                    #logging.info(f"Set input data: {self.crop_yield}")
+        else :
+            self.crop_yield = self.demand.crop_yield
+            
+        return agridata_bom
+        
         
     def get_emissions(self) :
-        self.fertilizer_n_per_ha = dfe.run(self.demand.product_iri, self.demand.fertilizer_amount, self.climate_key)
+        self.emission_per_ha = dfe.run(self.demand.product_iri, self.fertilizer_amount, self.climate_key)
         logging.info("Getting emission from fertilizer")
         
     def run(self):
-        self.get_master_db()
+        if self.demand.crop_yield is None or self.demand.fertilizer_amount is None : #to eventually be modified
+            self.run_create_data()
         self.get_all_input()
         self.get_emissions()
 
