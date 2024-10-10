@@ -7,20 +7,21 @@ from datetime import date
 import logging
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
-from sentier_data_tools.iri import ProductIRI #, GeonamesIRI
+from sentier_data_tools.iri import ProductIRI, GeonamesIRI
 from sentier_data_tools.model import SentierModel
-import n2OToAirInorganicFertiliserDirect_dev as n2o
+import DirectFertiliserEmission as dfe
 
 ## Attention : I would like demand to come from user input, I need mapping from natural language to IRI for product and geonames
 
 class UserInput(BaseModel):
     product_iri: ProductIRI
-    unit : str
+    unit : ProductIRI
     #properties: Optional[list]
     amount: float
+    climate_type : Optional[str] = None
     crop_yield : Optional[float] = None
     fertilizer_amount : Optional[float] = None
-    #spatial_context: GeonamesIRI = GeonamesIRI("https://sws.geonames.org/6295630/")
+    spatial_context: GeonamesIRI = GeonamesIRI("https://sws.geonames.org/6295630/")
     begin_date: Optional[date] = None
     end_date: Optional[date] = None
     
@@ -42,6 +43,15 @@ class Crop(SentierModel):
         pass
         
     def get_all_input(self) -> float :
+        
+        if self.demand.climate_type is None:
+            self.climate_key = 'default'
+        else:
+            # Ensure wet_climate is either 'wet' or 'dry'
+            if self.demand.climate_type not in ['wet', 'dry']:
+                logging.error(f"Invalid climate type value: {self.demand.climate_type}. Expected 'wet', 'dry', or None.")
+            self.climate_key = self.demand.climate_type
+            
         if self.demand.crop_yield is None :
             self.demand.crop_yield = 7.0 #to be modified as a function of self.masterDB
         if self.demand.fertilizer_amount is None :
@@ -49,8 +59,7 @@ class Crop(SentierModel):
         logging.info("Getting crop yield and fertilizer amount")
         
     def get_emissions(self) :
-        self.fertilizer_n_per_ha_wet = n2o.run(self.demand.product_iri, self.demand.fertilizer_amount, 'wet')
-        self.fertilizer_n_per_ha_dry = n2o.run(self.demand.product_iri, self.demand.fertilizer_amount, 'dry')
+        self.fertilizer_n_per_ha = dfe.run(self.demand.product_iri, self.demand.fertilizer_amount, self.climate_key)
         logging.info("Getting emission from fertilizer")
         
     def run(self):
