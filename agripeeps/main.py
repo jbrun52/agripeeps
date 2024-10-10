@@ -5,10 +5,12 @@ from pydantic import BaseModel
 import pandas as pd
 from datetime import date
 import logging
+import itertools
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
 from sentier_data_tools import (
     DatasetKind,
+    Dataset,
     Demand,
     Flow,
     FlowIRI,
@@ -17,8 +19,8 @@ from sentier_data_tools import (
     ProductIRI,
     SentierModel,
 )
-from sentier_data_tools.iri import ProductIRI#, GeonamesIRI
-#from sentier_data_tools.model import SentierModel
+
+from sentier_data_tools.iri import VocabIRI
 import DirectFertiliserEmission as dfe
 
 ## Attention : I would like demand to come from user input, I need mapping from natural language to IRI for product and geonames
@@ -31,7 +33,7 @@ class UserInput(BaseModel):
     climate_type : Optional[str] = None
     crop_yield : Optional[float] = None
     fertilizer_amount : Optional[float] = None
-    spatial_context: GeonamesIRI = GeonamesIRI("https://sws.geonames.org/6295630/")
+    spatial_context: GeonamesIRI = GeonamesIRI("https://sws.geonames.org/2782113")
     begin_date: Optional[date] = None
     end_date: Optional[date] = None
     
@@ -61,22 +63,22 @@ class Crop(SentierModel):
     def get_master_db(self) -> None :
         logging.info(self.crop)
         agridata_bom = self.get_model_data(
-            product=self.crop, kind=DatasetKind.BOM
+            product=self.corn, kind=DatasetKind.BOM #, location=self.demand.spatial_context
         )
         logging.info(agridata_bom)
         for i in agridata_bom["exactMatch"]:
-            print(self.mineral_fertiliser)
+            #print(self.mineral_fertiliser)
             if self.mineral_fertiliser in [ProductIRI(col["iri"]) for col in i.columns]:
                 self.mineral_fertiliser_data = i.dataframe
-                logging.info(f"Set input data: {self.mineral_fertiliser.display()}")
+                logging.info(f"Set input data: {i.name}")
 
-        agridata_param = self.get_model_data(
-            product=self.crop, kind=DatasetKind.PARAMETERS
-        )
-        for i in agridata_param["exactMatch"]:
-            if self.crop_yield in [ProductIRI(col["iri"]) for col in i.columns]:
-                self.crop_yield_data = i.dataframe
-                logging.info(f"Set input data: {self.crop_yield}")
+        # agridata_param = self.get_model_data(
+        #     product=self.crop, kind=DatasetKind.PARAMETERS
+        # )
+        # for i in agridata_param["exactMatch"]:
+        #     if self.crop_yield in [ProductIRI(col["iri"]) for col in i.columns]:
+        #         self.crop_yield_data = i.dataframe
+        #         logging.info(f"Set input data: {self.crop_yield}")
                 
         #self.masterDB = pd.read_csv('../docs/MasterDB.csv')
         logging.info("Getting master db")
@@ -108,4 +110,37 @@ class Crop(SentierModel):
         self.get_all_input()
         self.get_emissions()
 
-        
+    # def get_model_data(
+    #     self,
+    #     product: VocabIRI,
+    #     kind: DatasetKind,
+    #     location: GeonamesIRI = None
+    # ) -> dict:
+    #     logging.log(logging.INFO, f"{location}")
+    #     results = {
+    #         "exactMatch": list(
+    #             Dataset.select().where(
+    #                 Dataset.kind == kind,
+    #                 Dataset.product == str(product),
+    #                 Dataset.location == location
+    #             )
+    #         ),
+    #         "broader": list(
+    #             Dataset.select().where(
+    #                 Dataset.kind == kind,
+    #                 Dataset.product << product.broader(raw_strings=True),
+    #                 Dataset.location == GeonamesIRI(location)
+    #             )
+    #         ),
+    #         "narrower": list(
+    #             Dataset.select().where(
+    #                 Dataset.kind == kind,
+    #                 Dataset.product << product.narrower(raw_strings=True),
+    #                 Dataset.location == GeonamesIRI(location)
+    #             )
+    #         ),
+    #     }
+    #     for df in itertools.chain(*results.values()):
+    #         df.dataframe.apply_aliases(self.aliases)
+
+    #     return results
