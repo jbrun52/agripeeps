@@ -88,9 +88,10 @@ class Crop(SentierModel):
                 #print(self.mineral_fertilizer)
                 
                 if self.mineral_fertilizer in [ProductIRI(col["iri"]) for col in i.columns] and i.location == self.demand.spatial_context and self.demand.year in list(i.dataframe.year):
+                    i.dataframe = i.dataframe[i.dataframe.year == self.demand.year]
                     Crop.list_mineral_fertilizer_data.append(i)
                         
-                    self.fertilizer_amount = i.dataframe.mineral_fertilizer #to be modified
+                    self.fertilizer_amount = i.dataframe.mineral_fertilizer.values[0] #to be modified
                     logging.info(f"Get fertilizer amount: {self.fertilizer_amount}")
             if len(Crop.list_mineral_fertilizer_data) !=1 :
                 logging.error(f"filtering gone wrong matches found : {len(Crop.list_mineral_fertilizer_data)}")
