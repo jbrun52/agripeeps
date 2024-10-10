@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pandas as pd
 from loguru import logger
+import function as fct
 
 import faostat
 import country_converter as coco
@@ -37,17 +38,12 @@ def create_fertiliser_local_datastorage(reset: bool = True):
     fertiliser = create_mineral_fertilizer_data()
 
     metadata = sdt.Datapackage(
-        name="agricultural base data from FAO and FUBC",
+        name="agricultural fertiliser input data from FUBC",
         description="",
         contributors=[
             {
                 "title": "Oliver Hurtig",
                 "role": "author",
-                "path": ""
-            },
-            {
-                "title": "FAO",
-                "role": "data provider",
                 "path": ""
             },
              {
@@ -116,21 +112,86 @@ def create_yield_local_datastorage(reset: bool = True):
     if reset:
         sdt.reset_local_database()
 
+    metadata = sdt.Datapackage(
+        name="crop yield from FAO",
+        description="",
+        contributors=[
+            {
+                "title": "Oliver Hurtig",
+                "role": "author",
+                "path": ""
+            },
+             {
+                "title": "FAO",
+                "role": "data provider",
+                "path": ""
+            },
+        ],
+        homepage="https://fao.org/",
+    ).metadata()
+    metadata.pop("version")
+
     crop_yields = create_crop_yields_data()
+    for crop in crop_yields.CropIRI.unique():
+        for country in crop_yields.Country.unique():
+            df = crop_yields.query(f"CropIRI == @crop and Country == @country")[["Datasource", "Year", "Value"]]
+            df = df.set_axis(yield_COLUMNS, axis=1)
 
-    # sdt.Dataset(
-    #         name=f"crop yields",
-    #         dataframe=crop_yields,
-    #         product="http://data.europa.eu/xsp/cn2024/060011000090",
-    #         columns=[{"iri": x, "unit": y} for x, y in zip(yield_COLUMNS, yield_UNITS)],
-    #         metadata=metadata,
-    #         kind=sdt.DatasetKind.PARAMETERS,
-    #         location="https://sws.geonames.org/6255148/",
-    #         version=1,
-    #         valid_from=date(2000, 1, 1),
-    #         valid_to=date(2028, 1, 1),
-    #     ).save()
+            sdt.Dataset(
+                    name=f"crop yields",
+                    dataframe=df,
+                    product=crop,
+                    columns=[{"iri": x, "unit": y} for x, y in zip(yield_COLUMNS, yield_UNITS)],
+                    metadata=metadata,
+                    kind=sdt.DatasetKind.PARAMETERS,
+                    location=country,
+                    version=1,
+                    valid_from=date(2000, 1, 1),
+                    valid_to=date(2028, 1, 1),
+                ).save()
 
+def create_emissionfactors_local_datastorage(reset: bool = True):
+    if reset:
+        sdt.reset_local_database()
+
+    metadata = sdt.Datapackage(
+        name="N2O emission factors",
+        description="",
+        contributors=[
+            {
+                "title": "Oliver Hurtig",
+                "role": "author",
+                "path": ""
+            },
+             {
+                "title": "IPCC",
+                "role": "data provider",
+                "path": ""
+            },
+        ],
+        homepage="https://ipcc.org/",
+    ).metadata()
+    metadata.pop("version")
+    df_emission_factors = pd.read_csv("../docs/EF.csv", sep=';')
+    df = fct.format_df(df_emission_factors, ['crop_iri','fert_iri'])
+    df = df.drop("fert_iri",axis=1)
+    for crop in df.crop_iri.unique():
+        df_filt = df.query("crop_iri == @crop").drop("crop_iri",axis=1)
+        df_filt = df_filt.set_axis(ef_COLUMNS, axis=1)
+        display(df_filt)
+
+        sdt.Dataset(
+                name=f"N2O emission factors from IPCC",
+                dataframe=df_filt,
+                product=crop,
+                columns=[{"iri": x, "unit": y} for x, y in zip(ef_COLUMNS, ef_UNITS)],
+                metadata=metadata,
+                kind=sdt.DatasetKind.PARAMETERS,
+                location="https://sws.geonames.org/6295630/",
+                version=1,
+                valid_from=date(2000, 1, 1),
+                valid_to=date(2028, 1, 1),
+            ).save()
 
 crop_IRI = "http://data.europa.eu/xsp/cn2024/060011000090"
 geo_IRI = "http://purl.org/dc/terms/Location"
@@ -143,6 +204,20 @@ crop_IRIs = {
     "Maize": "http://data.europa.eu/xsp/cn2024/100500000080",
     "Maize (corn)": "http://data.europa.eu/xsp/cn2024/100500000080"
 }
+
+ef_COLUMNS = [
+    "climate_type",
+    "fert_type",
+    "value_type",
+    "https://vocab.sentier.dev/model-terms/nitrogen_n2o_emission_factor",
+]
+
+ef_UNITS = [
+    "https://www.w3.org/2001/XMLSchema#string",
+    "https://www.w3.org/2001/XMLSchema#string",
+    "https://www.w3.org/2001/XMLSchema#string",
+    "https://vocab.sentier.dev/units/unit/KiloGM-PER-KiloGM"
+]
 
 fertiliser_COLUMNS = [
     "https://vocab.sentier.dev/model-terms/generic/company",
