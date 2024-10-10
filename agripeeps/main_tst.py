@@ -8,7 +8,7 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
 from sentier_data_tools.iri import ProductIRI #, GeonamesIRI
-#from sentier_data_tools.model import SentierModel
+from sentier_data_tools import SentierModel
 import n2OToAirInorganicFertiliserDirect as n2o
 
 ## Attention : I would like demand to come from user input, I need mapping from natural language to IRI for product and geonames
@@ -27,19 +27,12 @@ class UserInput(BaseModel):
 class RunConfig(BaseModel):
     num_samples: int = 1000
 
-class Crop:
-    def __init__(self, user_input: UserInput, run_config: RunConfig):
-        self.user_input = user_input
-        self.run_config = run_config
-        if self.user_input.begin_date is None:
-            self.user_input.begin_date = date(date.today().year - 5, 1, 1)
-        if self.user_input.end_date is None:
-            self.user_input.end_date = date(date.today().year + 5, 1, 1)
-
+class Crop(SentierModel):
     def get_master_db(self) -> None :
         #self.masterDB = pd.read_csv('../docs/MasterDB.csv')
         logging.info("Getting master db")
         pass
+
     def get_all_input(self) -> float :
         if self.user_input.crop_yield is None :
             self.user_input.crop_yield = 7.0 #to be modified as a function of self.masterDB
@@ -48,8 +41,8 @@ class Crop:
         logging.info("Getting crop yield and fertilizer amount")
         
     def get_emissions(self) :
-        self.fertilizer_n_per_ha_wet = n2o.run(self.user_input.product_iri, self.user_input.fertilizer_amount, 'wet')
-        self.fertilizer_n_per_ha_dry = n2o.run(self.user_input.product_iri, self.user_input.fertilizer_amount, 'dry')
+        self.fertilizer_n_per_ha_wet = n2o.run(self.user_input.fertilizer_amount, 'wet')
+        self.fertilizer_n_per_ha_dry = n2o.run(self.user_input.fertilizer_amount, 'dry')
         logging.info("Getting emission from fertilizer")
         
     def run(self):

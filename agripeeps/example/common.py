@@ -3,14 +3,14 @@ from pydantic import BaseModel
 import pandas as pd
 from datetime import date
 
-from sentier_data_tools.iri import ProductIRI, GeonamesIRI
+from sentier_data_tools.iri import ProductIRI #, GeonamesIRI
 
 
 class Demand(BaseModel):
     product_iri: ProductIRI
     properties: Optional[list]
     amount: float
-    spatial_context: GeonamesIRI = GeonamesIRI("https://sws.geonames.org/6295630/")
+    #spatial_context: GeonamesIRI = GeonamesIRI("https://sws.geonames.org/6295630/")
     begin_date: Optional[date] = None
     end_date: Optional[date] = None
 
