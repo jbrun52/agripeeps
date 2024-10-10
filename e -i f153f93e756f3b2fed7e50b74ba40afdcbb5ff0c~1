@@ -1,0 +1,110 @@
+[33mcommit 4d469286c39822938f3e8442f7edb985fa9558df[m[33m ([m[1;36mHEAD -> [m[1;32mdevOH[m[33m)[m
+Author: Oliver Hurtig <oliver-hurtig@noreply.github.com>
+Date:   Thu Oct 10 14:01:21 2024 +0000
+
+    access token
+
+[33mcommit f153f93e756f3b2fed7e50b74ba40afdcbb5ff0c[m
+Author: Oliver Hurtig <oliver-hurtig@noreply.github.com>
+Date:   Thu Oct 10 14:00:07 2024 +0000
+
+    access token
+
+[33mcommit 537149084ffa642fda996e75da15fe564ecbf30e[m[33m ([m[1;31morigin/devOH[m[33m)[m
+Author: Oliver Hurtig <oliver-hurtig@noreply.github.com>
+Date:   Thu Oct 10 13:55:32 2024 +0000
+
+    creating datapackage working
+
+[33mcommit a63f7b962941744f53b05d82a28ce934e57343c0[m[33m ([m[1;32mdev[m[33m)[m
+Merge: 848f6eb e7409fd
+Author: Oliver Hurtig <oliver-hurtig@noreply.github.com>
+Date:   Thu Oct 10 08:00:12 2024 +0000
+
+    merge
+
+[33mcommit 848f6eb2b004c2368f37855a69acfe00e56a8109[m
+Author: Oliver Hurtig <oliver-hurtig@noreply.github.com>
+Date:   Thu Oct 10 07:58:29 2024 +0000
+
+    test
+
+[33mcommit 32e0cea2a4828aa914b1e758d41403d9f3c773c6[m
+Author: Oliver Hurtig <oliver-hurtig@noreply.github.com>
+Date:   Thu Oct 10 07:57:09 2024 +0000
+
+    geo functions
+
+[33mcommit e7409fd7847065c9c87826d0044b844ffea18b34[m[33m ([m[1;31morigin/devJB[m[33m, [m[1;31morigin/dev[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: Justine Brun <justine-brun@outlook.com>
+Date:   Thu Oct 10 07:44:40 2024 +0000
+
+    stash
+
+[33mcommit 939d8c6de2e515bc4a39cb5953cd9166aa6c604d[m
+Author: Justine Brun <justine-brun@outlook.com>
+Date:   Wed Oct 9 19:43:47 2024 +0000
+
+    wed
+
+[33mcommit 8a8e52d1fc4be661f81401571722e7f4189781c5[m
+Merge: 435f9d4 9016fec
+Author: Justine Brun <justine-brun@outlook.com>
+Date:   Wed Oct 9 18:41:32 2024 +0000
+
+    Merge branch 'dev' into devJB
+
+[33mcommit 435f9d408047d668bcabc2d0bf24ec5c68d9c293[m
+Author: Justine Brun <justine-brun@outlook.com>
+Date:   Wed Oct 9 18:41:08 2024 +0000
+
+    oka
+
+[33mcommit 64a627b97425129392f6955a6735c8c85a5a0665[m
+Author: Justine Brun <justine-brun@outlook.com>
+Date:   Wed Oct 9 18:40:25 2024 +0000
+
+    stash
+
+[33mcommit 9016fec7254a6bdd83354b592f0945aecb409f01[m
+Author: jbrun52 <justine-brun@outlook.com>
+Date:   Wed Oct 9 20:37:42 2024 +0200
+
+    Add files via upload
+
+[33mcommit 2f4dbf26b142200b29b2c933969a51f5462b1d97[m
+Merge: 966fa3f c9a6d24
+Author: Justine Brun <justine-brun@outlook.com>
+Date:   Wed Oct 9 14:49:22 2024 +0000
+
+    because I said so : Merge branch 'dev' into devJB
+
+[33mcommit 966fa3f56648b73c59614531d356ffa3ecf2d145[m
+Author: Justine Brun <justine-brun@outlook.com>
+Date:   Wed Oct 9 14:48:44 2024 +0000
+
+    stash
+
+[33mcommit c9a6d2470235a52c61612e505bb6a1c7a3d61714[m
+Author: lilsim1000 <lisi@igt.sdu.dk>
+Date:   Wed Oct 9 15:38:48 2024 +0200
+
+    N2O emission rates csv file
+
+[33mcommit 91caa06e95e4929774c53e2463f2b169693aa981[m
+Author: Oliver Hurtig <oliver-hurtig@noreply.github.com>
+Date:   Wed Oct 9 08:29:38 2024 +0000
+
+    n2oemissions
+
+[33mcommit 5b9b007e92de9c9504f51401eefc509a422fe862[m
+Author: Justine Brun <justine-brun@outlook.com>
+Date:   Tue Oct 8 11:45:52 2024 +0000
+
+    add some templates
+
+[33mcommit 54488974785ccec52b40253506d24c1dc7e90922[m
+Author: Justine Brun <justine-brun@outlook.com>
+Date:   Tue Oct 8 09:38:17 2024 +0000
+
+    first commit
