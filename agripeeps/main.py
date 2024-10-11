@@ -73,7 +73,7 @@ class Crop(SentierModel):
         create_data.create_fertiliser_local_datastorage()
         create_data.create_emissionfactors_local_datastorage()
 
-    def select_right_value_from_df(df, strategy = "first"):
+    def select_right_value_from_df(self, df, strategy = "first"):
         if strategy == "first":
             return df.values[0]
     
@@ -82,12 +82,12 @@ class Crop(SentierModel):
         agridata_bom = self.get_model_data(
                 product=self.demand.product_iri, kind=DatasetKind.BOM
                 )
-        agridata_bom_exact = self.merge_datasets_to_dataframes(self.agridata_param['exactMatch'])
-        self.agridata_param = self.get_model_data(
+        agridata_bom_exact = self.merge_datasets_to_dataframes(agridata_bom['exactMatch'])
+        agridata_param = self.get_model_data(
                 product=self.demand.product_iri, kind=DatasetKind.PARAMETERS
             )
-        agridata_param_exact = self.merge_datasets_to_dataframes(self.agridata_param['exactMatch'])
-        agridata_param_broader = self.merge_datasets_to_dataframes(self.agridata_param['broader'])
+        agridata_param_exact = self.merge_datasets_to_dataframes(agridata_param['exactMatch'])
+        agridata_param_broader = self.merge_datasets_to_dataframes(agridata_param['broader'])
         #Define climate
         logging.info("Getting climate")
         if self.demand.climate_type is None:
@@ -98,69 +98,43 @@ class Crop(SentierModel):
             self.climate_key = self.demand.climate_type
             
         #Define fertilizer amount
-        if self.demand.fertilizer_amount is None :
-            agridata_bom = self.get_model_data(
-                product=self.demand.product_iri, kind=DatasetKind.BOM #, location=self.demand.spatial_context
-                )
-            #logging.info(agridata_bom)
-            Crop.list_mineral_fertilizer_data = []
-            for i in agridata_bom["exactMatch"]:
-                #print(self.mineral_fertilizer)
-                
-                if self.mineral_fertilizer in [ProductIRI(col["iri"]) for col in i.columns] and i.location == self.demand.spatial_context and self.demand.year in list(i.dataframe.year):
-                    i.dataframe = i.dataframe[i.dataframe.year == self.demand.year]
-                    Crop.list_mineral_fertilizer_data.append(i)                        
-                    self.fertilizer_amount = i.dataframe.mineral_fertilizer.values[0] #to be modified
-            if len(Crop.list_mineral_fertilizer_data) !=1 :
-                logging.error(f"filtering gone wrong matches found : {len(Crop.list_mineral_fertilizer_data)}")
+        if self.demand.fertilizer_amount is None :            
+            if self.mineral_fertilizer in [ProductIRI(col) for col in agridata_bom_exact.columns] and agridata_bom_exact.location == self.demand.spatial_context:
+                if self.demand.year in list(agridata_bom_exact.dataframe.year):
+                    self.fertilizer_amount = self.select_right_value_from_df(agridata_bom_exact.dataframe[agridata_bom_exact.dataframe.year == self.demand.year])
+                else:
+                    logging.error(f"year not available : {agridata_bom_exact}")
         else : 
             self.fertilizer_amount = self.demand.fertilizer_amount
         logging.info(f"fertilizer amount: {self.fertilizer_amount}")
         
         #Define yield
-        self.agridata_param = self.get_model_data(
-                product=self.demand.product_iri, kind=DatasetKind.PARAMETERS
-            )
         if self.demand.crop_yield_val is None :
-            Crop.list_yield_data = []
-            for i in self.agridata_param["exactMatch"]:
-                if self.crop_yield in [ProductIRI(col["iri"]) for col in i.columns] and i.location == self.demand.spatial_context and self.demand.year in list(i.dataframe.year):
-                    i.dataframe = i.dataframe[i.dataframe.year == self.demand.year]
-                    Crop.list_yield_data.append(i)
-                    
-                    self.crop_yield_val = i.dataframe.crop_yield.values[0]
+            if self.crop_yield in [ProductIRI(col) for col in agridata_param_exact.columns] and agridata_param_exact.location == self.demand.spatial_context:
+                if self.demand.year in list(agridata_param_exact.dataframe.year):
+                    self.crop_yield_val = self.select_right_value_from_df(agridata_param_exact.dataframe[i.dataframe.year == self.demand.year])
                     logging.info(f"Set input data: {self.crop_yield}")
+                else:
+                    logging.error(f"year not available : {agridata_param_exact}")
         else :
             self.crop_yield_val = self.demand.crop_yield_val
 
         logging.info(f"crop yield: {self.crop_yield_val}")
 
         #Getting emission factor
-        found_exact_ef = False
-        for i in self.agridata_param["exactMatch"]:
-            if self.emission_factor in [ProductIRI(col["iri"]) for col in i.columns] :        
-                i.dataframe = i.dataframe[i.dataframe.climate_type == self.climate_key]
-                i.dataframe = i.dataframe[i.dataframe.fert_type.isin(['default','inorganic'])]
-                if not i.dataframe.empty:
-                    self.emission_factor_val = i.dataframe #.emission_factor #.values[0]
-                    logging.info(f"Emission factor: {self.emission_factor_val}")
-                    found_exact_ef = True
-                else : 
-                    print("couldn't find exact match")
-        if not found_exact_ef:
-            for j in self.agridata_param['broader']:
-                if self.emission_factor in [ProductIRI(col["iri"]) for col in j.columns] :
-                    j.dataframe = j.dataframe[j.dataframe.climate_type == self.climate_key]
-                    j.dataframe = j.dataframe[j.dataframe.fert_type.isin(['default','inorganic'])]
-
-                    if not j.dataframe.empty: 
-                        self.emission_factor_val = j.dataframe #.emission_factor #.values[0]
-                        logging.info(f"Emission factor: {self.emission_factor_val} for broader concept")
-                    else : 
-                        print("couldn't find broader")
-                                
+        if self.emission_factor in [ProductIRI(col) for col in agridata_param_exact.columns]:
+            if self.climate_key in agridata_param_exact.columns:
+                self.emission_factor_val = agridata_param_exact.database.query(f"climate_type == {self.climate_key} and fert_type in ['default','inorganic']")
+                logging.info(f"Emission factor: {self.emission_factor_val}")
+        else : 
+            print("couldn't find exact match")
+            #if self.climate_key in agridata_param_broader.columns:
+            climate_key_vals = ['default','inorganic']
+            self.emission_factor_val = agridata_param_broader.query(f"climate_type == @self.climate_key and fert_type.isin(@climate_key_vals)")
+            
+            logging.info(f"Emission factor: {self.emission_factor_val} for broader concept")
         
-    
+                                
         
     def get_emissions(self):
         #self.emission_per_ha = dfe.run(self.demand.product_iri, self.fertilizer_amount, self.emission_factor_val, self.climate_key)
