@@ -123,6 +123,7 @@ class Crop(SentierModel):
             self.run_create_data()
         self.get_all_input()
         self.get_emissions()
+        return self.emission_per_ha
         
 """
     def get_master_db(self) -> None :
