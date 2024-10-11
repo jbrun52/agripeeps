@@ -8,6 +8,8 @@ import create_data
 import logging
 import itertools
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+import warnings
+warnings.filterwarnings("ignore")
 
 from sentier_data_tools import (
     DatasetKind,
@@ -28,7 +30,7 @@ class UserInput(BaseModel):
     product_iri: ProductIRI
     unit : ProductIRI
     amount: float
-    crop_yield : Optional[float] = None
+    crop_yield_val : Optional[float] = None
     fertilizer_amount : Optional[float] = None
     climate_type : Optional[str] = None
     spatial_context: GeonamesIRI = GeonamesIRI("https://sws.geonames.org/2782113")
@@ -63,7 +65,8 @@ class Crop(SentierModel):
         super().__init__(demand=user_input, run_config=run_config)
 
     def run_create_data(self) :
-        logging.info(f"create data")
+        create_data.reset_db()
+        create_data.create_yield_local_datastorage()
         create_data.create_fertiliser_local_datastorage()
 
     def get_all_input(self) :
@@ -76,8 +79,7 @@ class Crop(SentierModel):
                 logging.error(f"Invalid climate type value: {self.demand.climate_type}. Expected 'wet', 'dry', or None.")
             self.climate_key = self.demand.climate_type
             
-        logging.info("Getting crop yield and fertilizer amount")
-    
+        #Define fertilizer amount
         if self.demand.fertilizer_amount is None :
             agridata_bom = self.get_model_data(
                 product=self.demand.product_iri, kind=DatasetKind.BOM #, location=self.demand.spatial_context
@@ -92,35 +94,37 @@ class Crop(SentierModel):
                     Crop.list_mineral_fertilizer_data.append(i)
                         
                     self.fertilizer_amount = i.dataframe.mineral_fertilizer.values[0] #to be modified
-                    logging.info(f"Get fertilizer amount: {self.fertilizer_amount}")
+                    
             if len(Crop.list_mineral_fertilizer_data) !=1 :
                 logging.error(f"filtering gone wrong matches found : {len(Crop.list_mineral_fertilizer_data)}")
         else : 
             self.fertilizer_amount = self.demand.fertilizer_amount
-        return agridata_bom
-    """
-        if self.demand.crop_yield is None :
+        logging.info(f"fertilizer amount: {self.fertilizer_amount}")
+        
+        #Define yield
+        if self.demand.crop_yield_val is None :
             agridata_param = self.get_model_data(
-                product=self.crop, kind=DatasetKind.PARAMETERS
+                product=self.demand.product_iri, kind=DatasetKind.PARAMETERS
             )
+            Crop.list_yield_data = []
             for i in agridata_param["exactMatch"]:
-                if self.crop_yield in [ProductIRI(col["iri"]) for col in i.columns]:
-                    Crop.crop_yield_data = i.dataframe
-                    self.crop_yield = 7 #to be modified
-                    #logging.info(f"Set input data: {self.crop_yield}")
+                if self.crop_yield in [ProductIRI(col["iri"]) for col in i.columns] and i.location == self.demand.spatial_context and self.demand.year in list(i.dataframe.year):
+                    i.dataframe = i.dataframe[i.dataframe.year == self.demand.year]
+                    Crop.list_yield_data.append(i)
+                    
+                    self.crop_yield_val = i.dataframe.crop_yield.values[0]
+                    logging.info(f"Set input data: {self.crop_yield}")
         else :
-            self.crop_yield = self.demand.crop_yield
-           """ 
-        
-        
+            self.crop_yield_val = self.demand.crop_yield_val
+
+        logging.info(f"crop yield: {self.crop_yield_val}")
         
     def get_emissions(self) :
         self.emission_per_ha = dfe.run(self.demand.product_iri, self.fertilizer_amount, self.climate_key)
         logging.info("Getting emission from fertilizer")
         
     def run(self):
-        if self.demand.crop_yield is None or self.demand.fertilizer_amount is None : #to eventually be modified
-            self.run_create_data()
+        self.run_create_data()
         self.get_all_input()
         self.get_emissions()
         

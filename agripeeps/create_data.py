@@ -1,6 +1,9 @@
 from datetime import date
 from pathlib import Path
 
+import warnings
+warnings.filterwarnings("ignore")
+
 import pandas as pd
 from loguru import logger
 import function as fct
@@ -14,6 +17,10 @@ df_lookup_geonameid = pd.read_csv("geonames.tsv", sep='\t')
 lookup_geonameid = df_lookup_geonameid[["ISO3", "geonameid"]].set_index("ISO3").to_dict()['geonameid']
 years = []
 
+def reset_db():
+    sdt.reset_local_database()
+
+        
 def create_mineral_fertilizer_data():
     
     df_fertiliser = pd.read_csv("https://raw.githubusercontent.com/ludemannc/FUBC_1_to_9_2022/refs/heads/main/results/FUBC_1_to_9_data.csv")
@@ -30,11 +37,8 @@ def create_mineral_fertilizer_data():
     df_fertiliser["Datasource"] = "FAO"
     return df_fertiliser
 
-
-def create_fertiliser_local_datastorage(reset: bool = True):
-    if reset:
-        sdt.reset_local_database()
-
+def create_fertiliser_local_datastorage():
+        
     fertiliser = create_mineral_fertilizer_data()
 
     metadata = sdt.Datapackage(
@@ -108,9 +112,7 @@ def get_FAO_data(dataset_code, element, items, list_year):
     )
     return data
 
-def create_yield_local_datastorage(reset: bool = True):
-    if reset:
-        sdt.reset_local_database()
+def create_yield_local_datastorage():
 
     metadata = sdt.Datapackage(
         name="crop yield from FAO",
@@ -150,9 +152,8 @@ def create_yield_local_datastorage(reset: bool = True):
                     valid_to=date(2028, 1, 1),
                 ).save()
 
-def create_emissionfactors_local_datastorage(reset: bool = True):
-    if reset:
-        sdt.reset_local_database()
+def create_emissionfactors_local_datastorage():
+
 
     metadata = sdt.Datapackage(
         name="N2O emission factors",
