@@ -73,7 +73,21 @@ class Crop(SentierModel):
         create_data.create_fertiliser_local_datastorage()
         create_data.create_emissionfactors_local_datastorage()
 
+    def select_right_value_from_df(df, strategy = "first"):
+        if strategy == "first":
+            return df.values[0]
+    
     def get_all_input(self) :
+        # get all BOM tables and PARAMETERS
+        agridata_bom = self.get_model_data(
+                product=self.demand.product_iri, kind=DatasetKind.BOM
+                )
+        agridata_bom_exact = self.merge_datasets_to_dataframes(self.agridata_param['exactMatch'])
+        self.agridata_param = self.get_model_data(
+                product=self.demand.product_iri, kind=DatasetKind.PARAMETERS
+            )
+        agridata_param_exact = self.merge_datasets_to_dataframes(self.agridata_param['exactMatch'])
+        agridata_param_broader = self.merge_datasets_to_dataframes(self.agridata_param['broader'])
         #Define climate
         logging.info("Getting climate")
         if self.demand.climate_type is None:
@@ -95,10 +109,8 @@ class Crop(SentierModel):
                 
                 if self.mineral_fertilizer in [ProductIRI(col["iri"]) for col in i.columns] and i.location == self.demand.spatial_context and self.demand.year in list(i.dataframe.year):
                     i.dataframe = i.dataframe[i.dataframe.year == self.demand.year]
-                    Crop.list_mineral_fertilizer_data.append(i)
-                        
+                    Crop.list_mineral_fertilizer_data.append(i)                        
                     self.fertilizer_amount = i.dataframe.mineral_fertilizer.values[0] #to be modified
-                    
             if len(Crop.list_mineral_fertilizer_data) !=1 :
                 logging.error(f"filtering gone wrong matches found : {len(Crop.list_mineral_fertilizer_data)}")
         else : 
@@ -124,36 +136,41 @@ class Crop(SentierModel):
         logging.info(f"crop yield: {self.crop_yield_val}")
 
         #Getting emission factor
-    
-        
-    def get_emissions(self) :
+        found_exact_ef = False
         for i in self.agridata_param["exactMatch"]:
-                if self.emission_factor in [ProductIRI(col["iri"]) for col in i.columns] :        
-                    i.dataframe = i.dataframe[i.dataframe.climate_type == self.climate_key]
-                    i.dataframe = i.dataframe[i.dataframe.fert_type.isin(['default','inorganic'])]
-                    if not i.dataframe.empty:
-                        self.emission_factor_val = i.dataframe.emission_factor.values[0]
-                        logging.info(f"Emission factor: {self.emission_factor_val}")
-                    else : 
-                        print("couldn't find exact match")
-                else :
-                    for j in self.agridata_param['broader']:
-                        if self.emission_factor in [ProductIRI(col["iri"]) for col in j.columns] :
-                            j.dataframe = j.dataframe[j.dataframe.climate_type == self.climate_key]
-                            j.dataframe = j.dataframe[j.dataframe.fert_type.isin(['default','inorganic'])]
+            if self.emission_factor in [ProductIRI(col["iri"]) for col in i.columns] :        
+                i.dataframe = i.dataframe[i.dataframe.climate_type == self.climate_key]
+                i.dataframe = i.dataframe[i.dataframe.fert_type.isin(['default','inorganic'])]
+                if not i.dataframe.empty:
+                    self.emission_factor_val = i.dataframe #.emission_factor #.values[0]
+                    logging.info(f"Emission factor: {self.emission_factor_val}")
+                    found_exact_ef = True
+                else : 
+                    print("couldn't find exact match")
+        if not found_exact_ef:
+            for j in self.agridata_param['broader']:
+                if self.emission_factor in [ProductIRI(col["iri"]) for col in j.columns] :
+                    j.dataframe = j.dataframe[j.dataframe.climate_type == self.climate_key]
+                    j.dataframe = j.dataframe[j.dataframe.fert_type.isin(['default','inorganic'])]
 
-                            if not j.dataframe.empty: 
-                                self.emission_factor_val = j.dataframe.emission_factor.values[0]
-                                logging.info(f"Emission factor: {self.emission_factor_val} for broader concept")
-                            else : 
-                                print("couldn't find broader")
+                    if not j.dataframe.empty: 
+                        self.emission_factor_val = j.dataframe #.emission_factor #.values[0]
+                        logging.info(f"Emission factor: {self.emission_factor_val} for broader concept")
+                    else : 
+                        print("couldn't find broader")
                                 
         
+    
         
-        self.emission_per_ha = dfe.run(self.demand.product_iri, self.fertilizer_amount, self.emission_factor_val, self.climate_key)
-        
+    def get_emissions(self):
+        #self.emission_per_ha = dfe.run(self.demand.product_iri, self.fertilizer_amount, self.emission_factor_val, self.climate_key)
 
-        
+        df_emissions = self.emission_factor_val
+        df_emissions["fertiliser_input"] = self.fertilizer_amount
+        df_emissions["N2O emission"] = (28+16)/28 * df_emissions["fertiliser_input"] * df_emissions['emission_factor']
+        # this should be handled by unit conversion at some point
+        df_emissions["N2O emission per ha"] = df_emissions["N2O emission"] * 10000
+        self.emission_per_ha = df_emissions
         logging.info("Getting emission from fertilizer")
         
     def run(self):
