@@ -179,7 +179,6 @@ def create_emissionfactors_local_datastorage():
     for crop in df.crop_iri.unique():
         df_filt = df.query("crop_iri == @crop").drop("crop_iri",axis=1)
         df_filt = df_filt.set_axis(ef_COLUMNS, axis=1)
-        display(df_filt)
 
         sdt.Dataset(
                 name=f"N2O emission factors from IPCC",

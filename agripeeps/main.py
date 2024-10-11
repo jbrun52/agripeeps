@@ -60,7 +60,10 @@ class Crop(SentierModel):
             ): "crop_yield",
             ProductIRI(
             "http://purl.org/dc/terms/date"
-            ) : 'year'}
+            ) : 'year',
+            ProductIRI(
+            "https://vocab.sentier.dev/model-terms/nitrogen_n2o_emission_factor"
+            ) : 'emission_factor'}
         # Assuming user_input maps to demand in SentierModel
         super().__init__(demand=user_input, run_config=run_config)
 
@@ -68,6 +71,7 @@ class Crop(SentierModel):
         create_data.reset_db()
         create_data.create_yield_local_datastorage()
         create_data.create_fertiliser_local_datastorage()
+        create_data.create_emissionfactors_local_datastorage()
 
     def get_all_input(self) :
         #Define climate
@@ -102,12 +106,12 @@ class Crop(SentierModel):
         logging.info(f"fertilizer amount: {self.fertilizer_amount}")
         
         #Define yield
-        if self.demand.crop_yield_val is None :
-            agridata_param = self.get_model_data(
+        self.agridata_param = self.get_model_data(
                 product=self.demand.product_iri, kind=DatasetKind.PARAMETERS
             )
+        if self.demand.crop_yield_val is None :
             Crop.list_yield_data = []
-            for i in agridata_param["exactMatch"]:
+            for i in self.agridata_param["exactMatch"]:
                 if self.crop_yield in [ProductIRI(col["iri"]) for col in i.columns] and i.location == self.demand.spatial_context and self.demand.year in list(i.dataframe.year):
                     i.dataframe = i.dataframe[i.dataframe.year == self.demand.year]
                     Crop.list_yield_data.append(i)
@@ -118,9 +122,38 @@ class Crop(SentierModel):
             self.crop_yield_val = self.demand.crop_yield_val
 
         logging.info(f"crop yield: {self.crop_yield_val}")
+
+        #Getting emission factor
+    
         
     def get_emissions(self) :
-        self.emission_per_ha = dfe.run(self.demand.product_iri, self.fertilizer_amount, self.climate_key)
+        for i in self.agridata_param["exactMatch"]:
+                if self.emission_factor in [ProductIRI(col["iri"]) for col in i.columns] :        
+                    i.dataframe = i.dataframe[i.dataframe.climate_type == self.climate_key]
+                    i.dataframe = i.dataframe[i.dataframe.fert_type.isin(['default','inorganic'])]
+                    if not i.dataframe.empty:
+                        self.emission_factor_val = i.dataframe.emission_factor.values[0]
+                        logging.info(f"Emission factor: {self.emission_factor_val}")
+                    else : 
+                        print("couldn't find exact match")
+                else :
+                    for j in self.agridata_param['broader']:
+                        if self.emission_factor in [ProductIRI(col["iri"]) for col in j.columns] :
+                            j.dataframe = j.dataframe[j.dataframe.climate_type == self.climate_key]
+                            j.dataframe = j.dataframe[j.dataframe.fert_type.isin(['default','inorganic'])]
+
+                            if not j.dataframe.empty: 
+                                self.emission_factor_val = j.dataframe.emission_factor.values[0]
+                                logging.info(f"Emission factor: {self.emission_factor_val} for broader concept")
+                            else : 
+                                print("couldn't find broader")
+                                
+        
+        
+        self.emission_per_ha = dfe.run(self.demand.product_iri, self.fertilizer_amount, self.emission_factor_val, self.climate_key)
+        
+
+        
         logging.info("Getting emission from fertilizer")
         
     def run(self):
@@ -128,65 +161,3 @@ class Crop(SentierModel):
         self.get_all_input()
         self.get_emissions()
         
-"""
-    def get_master_db(self) -> None :
-        logging.info(self.crop)
-        agridata_bom = self.get_model_data(
-            product=self.corn, kind=DatasetKind.BOM #, location=self.demand.spatial_context
-        )
-        logging.info(agridata_bom)
-        for i in agridata_bom["exactMatch"]:
-            #print(self.mineral_fertilizer)
-            if self.mineral_fertilizer in [ProductIRI(col["iri"]) for col in i.columns]:
-                self.mineral_fertilizer_data = i.dataframe
-                logging.info(f"Set input data: {i.name}")
-
-        # agridata_param = self.get_model_data(
-        #     product=self.crop, kind=DatasetKind.PARAMETERS
-        # )
-        # for i in agridata_param["exactMatch"]:
-        #     if self.crop_yield in [ProductIRI(col["iri"]) for col in i.columns]:
-        #         self.crop_yield_data = i.dataframe
-        #         logging.info(f"Set input data: {self.crop_yield}")
-                
-        #self.masterDB = pd.read_csv('../docs/MasterDB.csv')
-        logging.info("Getting master db")
-        
-        return agridata_bom
-"""   
-   
-
-    # def get_model_data(
-    #     self,
-    #     product: VocabIRI,
-    #     kind: DatasetKind,
-    #     location: GeonamesIRI = None
-    # ) -> dict:
-    #     logging.log(logging.INFO, f"{location}")
-    #     results = {
-    #         "exactMatch": list(
-    #             Dataset.select().where(
-    #                 Dataset.kind == kind,
-    #                 Dataset.product == str(product),
-    #                 Dataset.location == location
-    #             )
-    #         ),
-    #         "broader": list(
-    #             Dataset.select().where(
-    #                 Dataset.kind == kind,
-    #                 Dataset.product << product.broader(raw_strings=True),
-    #                 Dataset.location == GeonamesIRI(location)
-    #             )
-    #         ),
-    #         "narrower": list(
-    #             Dataset.select().where(
-    #                 Dataset.kind == kind,
-    #                 Dataset.product << product.narrower(raw_strings=True),
-    #                 Dataset.location == GeonamesIRI(location)
-    #             )
-    #         ),
-    #     }
-    #     for df in itertools.chain(*results.values()):
-    #         df.dataframe.apply_aliases(self.aliases)
-
-    #     return results
