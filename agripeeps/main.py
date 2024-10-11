@@ -7,7 +7,16 @@ from datetime import date
 import create_data
 import logging
 import itertools
-logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+logging.basicConfig(
+    filename="app.log",
+    level=logging.DEBUG, 
+    encoding="utf-8",
+    filemode="a",
+    format="{asctime} - {levelname} - {message}",
+    style="{",
+    datefmt="%Y-%m-%d %H:%M",
+)
+
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -106,6 +115,7 @@ class Crop(SentierModel):
                     logging.error(f"year not available : {agridata_bom_exact}")
         else : 
             self.fertilizer_amount = self.demand.fertilizer_amount
+        
         logging.info(f"fertilizer amount: {self.fertilizer_amount}")
         
         #Define yield
@@ -152,4 +162,4 @@ class Crop(SentierModel):
         self.get_all_input()
         self.get_emissions()
         return self.emission_per_ha
-        
+      
