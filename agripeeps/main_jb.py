@@ -5,7 +5,9 @@ from pydantic import BaseModel
 import pandas as pd
 from datetime import date
 import create_data
+import csv
 import logging
+import os
 import itertools
 logging.basicConfig(
     filename="app.log",
@@ -88,10 +90,10 @@ class Crop(SentierModel):
     
     def get_all_input(self) :
         # get all BOM tables and PARAMETERS
-        agridata_bom = self.get_model_data(
+        self.agridata_bom = self.get_model_data(
                 product=self.demand.product_iri, kind=DatasetKind.BOM
                 )
-        agridata_bom_exact = self.merge_datasets_to_dataframes(self.agridata_param['exactMatch'])
+        agridata_bom_exact = self.merge_datasets_to_dataframes(self.agridata_bom['exactMatch'])
         self.agridata_param = self.get_model_data(
                 product=self.demand.product_iri, kind=DatasetKind.PARAMETERS
             )
@@ -128,17 +130,17 @@ class Crop(SentierModel):
             self.fertilizer_amount = self.demand.fertilizer_amount
         logging.info(f"fertilizer amount: {self.fertilizer_amount}")
 
-    # first user message: model parameters
-    message = ("Based on your input, the following model parameters were selected:\n"
-                f"Crop type: {self.demand.product_iri}\n"
-                f"Functional unit: Production of {self.demand.amount}{self.demand.unit} of selected crop \n" #maybe later mapped onto natural language
-                f"Region: {self.demand.spatial_context}\n"
-                f"Year: {self.demand.year}\n"
-                f"Fertilizer amount: {self.demand.fertilizer_amount if fert_input == True else 'not specified, default value: {self.demand.fertilizer_amount}'}\n"
-                f"Beginning date: {self.demand.begin_date if begin_input == True else 'not specified, default: {self.demand.begin_date}'}\n"
-                f"End date: {self.demand.end_date if begin_input == True else f'not specified, default: {self.demand.end_date}'}")
-    logging.info(f"User output {message}")
-    print(message)
+        # first user message: model parameters
+        message = ("Based on your input, the following model parameters were selected:\n"
+                    f"Crop type: {self.demand.product_iri}\n"
+                    f"Functional unit: Production of {self.demand.amount}{self.demand.unit.display()} of selected crop \n" #maybe later mapped onto natural language
+                    f"Region: {self.demand.spatial_context}\n"
+                    f"Year: {self.demand.year}\n"
+                    f"Fertilizer amount: {self.fertilizer_amount if self.demand.fertilizer_amount is not None else f'not specified, default value: {self.fertilizer_amount}'}\n"
+                    f"Beginning date: {self.demand.begin_date}\n"
+                    f"End date: {self.demand.end_date}")
+        logging.info(f"User output {message}")
+        print(message)
     
         
         #Define yield
@@ -201,25 +203,25 @@ class Crop(SentierModel):
         self.run_create_data()
         self.get_all_input()
         self.get_emissions()
-        
-#output message to user: N2O amounts per crop per climate
-n2o_user_output = (f"N2O emissions to air for {self.demand.amount}{self.demand.unit} of {self.demand.product_iri} : {self.emission_per_ha * self.crop_yield_val} \n"
-                   f"Climate conditions:{self.climate_key}")
-logging.info(n2o_user_output)
-print(n2o_user_output)
+        #output message to user: N2O amounts per crop per climate
+        #n2o_user_output = (f"N2O emissions to air for {self.demand.amount}{self.demand.unit} of {self.demand.product_iri} : {self.emission_per_ha * self.crop_yield_val} \n"
+                           #f"Climate conditions:{self.climate_key}")
+        #logging.info(n2o_user_output)
+        #print(n2o_user_output)
 
 #Function to transform logs saved into csv
-import csv
-
 def log_to_csv(log_file, csv_file):
+    # Check if the log file exists; if not, create it
+    
+    
+    # Now proceed with reading the log file and writing to the CSV file
     with open(log_file, 'r') as log_f, open(csv_file, 'w', newline='') as csv_f:
         writer = csv.writer(csv_f)
         writer.writerow(['Time', 'Level', 'Message'])  # Write CSV header
-        
         for line in log_f:
-            parts = line.strip().split(' - ', 2)  # Split log line into components
+            # Assuming log format: "time level message"
+            parts = line.split(maxsplit=2)  # Split only the first two whitespaces
             if len(parts) == 3:
-                writer.writerow(parts)  # Write log components into CSV
-
+                writer.writerow(parts)
 # Convert the log file to a CSV file
 log_to_csv('app.log', 'log_output.csv')
