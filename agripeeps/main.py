@@ -7,7 +7,16 @@ from datetime import date
 import create_data
 import logging
 import itertools
-logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+logging.basicConfig(
+    filename="app.log",
+    level=logging.DEBUG, 
+    encoding="utf-8",
+    filemode="a",
+    format="{asctime} - {levelname} - {message}",
+    style="{",
+    datefmt="%Y-%m-%d %H:%M",
+)
+
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -110,12 +119,27 @@ class Crop(SentierModel):
                 if self.mineral_fertilizer in [ProductIRI(col["iri"]) for col in i.columns] and i.location == self.demand.spatial_context and self.demand.year in list(i.dataframe.year):
                     i.dataframe = i.dataframe[i.dataframe.year == self.demand.year]
                     Crop.list_mineral_fertilizer_data.append(i)                        
+                        
                     self.fertilizer_amount = i.dataframe.mineral_fertilizer.values[0] #to be modified
+                    
             if len(Crop.list_mineral_fertilizer_data) !=1 :
                 logging.error(f"filtering gone wrong matches found : {len(Crop.list_mineral_fertilizer_data)}")
         else : 
             self.fertilizer_amount = self.demand.fertilizer_amount
         logging.info(f"fertilizer amount: {self.fertilizer_amount}")
+
+    # first user message: model parameters
+    message = ("Based on your input, the following model parameters were selected:\n"
+                f"Crop type: {self.demand.product_iri}\n"
+                f"Functional unit: Production of {self.demand.amount}{self.demand.unit} of selected crop \n" #maybe later mapped onto natural language
+                f"Region: {self.demand.spatial_context}\n"
+                f"Year: {self.demand.year}\n"
+                f"Fertilizer amount: {self.demand.fertilizer_amount if fert_input == True else 'not specified, default value: {self.demand.fertilizer_amount}'}\n"
+                f"Beginning date: {self.demand.begin_date if begin_input == True else 'not specified, default: {self.demand.begin_date}'}\n"
+                f"End date: {self.demand.end_date if begin_input == True else f'not specified, default: {self.demand.end_date}'}")
+    logging.info(f"User output {message}")
+    print(message)
+    
         
         #Define yield
         self.agridata_param = self.get_model_data(
@@ -177,5 +201,25 @@ class Crop(SentierModel):
         self.run_create_data()
         self.get_all_input()
         self.get_emissions()
-        return self.emission_per_ha
         
+#output message to user: N2O amounts per crop per climate
+n2o_user_output = (f"N2O emissions to air for {self.demand.amount}{self.demand.unit} of {self.demand.product_iri} : {self.emission_per_ha * self.crop_yield_val} \n"
+                   f"Climate conditions:{self.climate_key}")
+logging.info(n2o_user_output)
+print(n2o_user_output)
+
+#Function to transform logs saved into csv
+import csv
+
+def log_to_csv(log_file, csv_file):
+    with open(log_file, 'r') as log_f, open(csv_file, 'w', newline='') as csv_f:
+        writer = csv.writer(csv_f)
+        writer.writerow(['Time', 'Level', 'Message'])  # Write CSV header
+        
+        for line in log_f:
+            parts = line.strip().split(' - ', 2)  # Split log line into components
+            if len(parts) == 3:
+                writer.writerow(parts)  # Write log components into CSV
+
+# Convert the log file to a CSV file
+log_to_csv('app.log', 'log_output.csv')
